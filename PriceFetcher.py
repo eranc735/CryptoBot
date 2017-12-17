@@ -2,14 +2,15 @@ import httplib2
 import json
 import time
 import threading
+import unicodedata
 
 class PriceFetcher:
     base_url = "https://www.bitstamp.net/api/v2/ticker/"
     running = False
 
     pairsToFetch = {
-        'Ripple': 'xrpusd',
-        'Bitcoin': 'btcusd',
+        'ripple': 'xrpusd',
+        'bitcoin': 'btcusd',
         'ethereum': 'ethusd',
     }
 
@@ -25,9 +26,9 @@ class PriceFetcher:
     def run(self):
         running = True
         while running:
-            for priceKey in self.pairsToFetch.keys():
-                print "fetching %s" % priceKey
-                self.prices[priceKey] = self.fetchPrice(self.pairsToFetch[priceKey])
+            for currencyKey in self.pairsToFetch.keys():
+                print "fetching %s" % currencyKey
+                self.prices[currencyKey] = self.fetchPrice(self.pairsToFetch[currencyKey])
             time.sleep(60)
 
             time.sleep(self.interval)
@@ -54,6 +55,8 @@ class PriceFetcher:
     def stopFetching(self):
         self.running = False
 
+    def getPrice(self, currency):
+        return  self.prices[currency]
 
     def printPrices(self):
         for pairKey in self.pairsToFetch:

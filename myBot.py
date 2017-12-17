@@ -1,20 +1,20 @@
 import time
 import re
 import os
+import PriceFetcher
 from slackclient import SlackClient
 
-
-
-
 # instantiate Slack clientg
-slack_client = SlackClient(os.environ("SLACKBOT"))
+temp = os.environ["SLACKBOT"]
+slack_client = SlackClient(temp)
+fetcher = PriceFetcher.PriceFetcher()
 
 # starterbot's user ID in Slack: value is assigned after the bot starts up
 starterbot_id = None
 
 # constants
 RTM_READ_DELAY = 1 # 1 second delay between reading from RTM
-EXAMPLE_COMMAND = "do"
+GET_PRICE_COMMAND = r"get price of ([a-zA-Z]+)"
 MENTION_REGEX = "^<@(|[WU].+)>(.*)"
 
 def parse_bot_commands(slack_events):
@@ -44,13 +44,20 @@ def handle_command(command, channel):
         Executes bot command if the command is known
     """
     # Default response is help text for the user
-    default_response = "Not sure what you mean. Try *{}*.".format(EXAMPLE_COMMAND)
+    default_response = "Not sure what you mean. Try *{}*.".format(GET_PRICE_COMMAND)
 
     # Finds and executes the given command, filling in response
     response = None
     # This is where you start to implement more commands!
-    if command.startswith(EXAMPLE_COMMAND):
-        response = "Sure...write some more code then I can do that!"
+    matches = re.search(GET_PRICE_COMMAND, command)
+    if matches:
+        currency = matches.group(1)
+        currency = currency.encode('ascii','ignore').lower()
+        if currency:
+            price = fetcher.getPrice(currency)
+            response = "Current price for " + currency + " is " + price
+        else:
+            response = "Invalid command format"
 
     # Sends the response back to the channel
     slack_client.api_call(
