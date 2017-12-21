@@ -2,7 +2,24 @@ import httplib2
 import json
 import time
 import threading
-import unicodedata
+import enum
+
+class AlertType(enum.Enum):
+    Upper = 1
+    Lower = 2
+
+class PriceAlert:
+    def __init__(self, user, priceThreashold, boundaryType):
+        self.user = user
+        self.priceThreashold = priceThreashold
+        self.boundaryType = boundaryType
+
+    def isApplicable(self, price):
+        if self.boundaryType == AlertType.Upper and self.priceThreashold > price:
+            return False
+        elif self.boundaryType == AlertType.Lower and self.priceThreashold > price:
+            return True
+        return False
 
 class PriceFetcher:
     base_url = "https://www.bitstamp.net/api/v2/ticker/"
@@ -14,24 +31,39 @@ class PriceFetcher:
         'ethereum': 'ethusd',
     }
 
-    prices = {
-
-    }
-
-    def __init__(self, interval=1):
+    def __init__(self):
         thread = threading.Thread(target=self.run, args=())
         thread.daemon = True  # Daemonize thread
         thread.start()
+        self.prices = {}
+        self.priceAlerts = {}
 
     def run(self):
         running = True
         while running:
             for currencyKey in self.pairsToFetch.keys():
                 print "fetching %s" % currencyKey
-                self.prices[currencyKey] = self.fetchPrice(self.pairsToFetch[currencyKey])
+                price = self.fetchPrice(self.pairsToFetch[currencyKey])
+                self.updatePrice(currencyKey, price)
             time.sleep(60)
 
-            time.sleep(self.interval)
+    def addCAlert(self, currency, user, priceThreashold, alertType):
+        if not currency in self.priceAlerts:
+            self.priceAlerts[currency] = []
+        alert = PriceAlert(user, priceThreashold, alertType)
+        self.priceAlerts[currency].add(alert)
+
+
+    def updatePrice(self, currency, price):
+        self.prices[currency] = price
+        if currency in self.alerts:
+            priceAlerts = self.alerts[currency]
+            for alert in priceAlerts:
+                if alert.isApplicable(price):
+                    self.sendPriceAlert("", alert)
+
+    def sendPriceAlert(self, alert):
+        print(alert.user)
 
     def fetchPrice(self, pair):
             try:
