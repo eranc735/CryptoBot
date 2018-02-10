@@ -14,4 +14,5 @@ if __name__ == "__main__":
         GET_PRICE_COMMAND = r"get price of ([a-zA-Z]+)"
         matches = re.search(GET_PRICE_COMMAND, "get price of RIPPLE")
         vok = 5
+        dok = 6
 
